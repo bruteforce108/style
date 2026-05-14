@@ -1,0 +1,129 @@
+create table menu (
+    item_id int primary key,
+    item_name varchar(50),
+    category varchar(50),
+    price decimal(10,2)
+);
+create table customers (
+    customer_id int primary key,
+    name varchar(50),
+    contact_number varchar(15)
+);
+create table orders (
+    order_id int primary key,
+    customer_id int,
+    order_date_time datetime,
+    foreign key (customer_id) references customers(customer_id)
+);
+create table orderitems (
+    order_id int,
+    item_id int,
+    quantity int,
+    unit_price decimal(10,2),
+    foreign key (order_id) references orders(order_id),
+    foreign key (item_id) references menu(item_id)
+);
+insert into menu values
+(1, 'pizza', 'fast food', 200),
+(2, 'burger', 'fast food', 120),
+(3, 'pasta', 'italian', 180),
+(4, 'salad', 'healthy', 100);
+insert into customers values
+(101, 'amit', '9876543210'),
+(102, 'sneha', '9876501234'),
+(103, 'rahul', '9876512345');
+insert into orders values
+(1, 101, '2026-04-25 12:00:00'),
+(2, 102, '2026-04-25 13:00:00'),
+(3, 101, '2026-04-24 19:30:00');
+insert into orderitems values
+(1, 1, 2, 200),
+(1, 2, 1, 120),
+(2, 3, 1, 180),
+(3, 1, 1, 200);
+select 
+    m.category,
+    sum(oi.quantity * oi.unit_price) as total_sales
+from orderitems oi
+join menu m on oi.item_id = m.item_id
+group by m.category;
+delimiter //
+
+create procedure getorderdetails(in oid int)
+begin
+    select 
+        o.order_id,
+        c.name as customer_name,
+        m.item_name,
+        oi.quantity,
+        oi.unit_price
+    from orders o
+    join customers c on o.customer_id = c.customer_id
+    join orderitems oi on o.order_id = oi.order_id
+    join menu m on oi.item_id = m.item_id
+    where o.order_id = oid;
+end //	
+
+delimiter ;
+
+call getorderdetails(1);
+select 
+    o.order_id,
+    c.name,
+    o.order_date_time
+from orders o
+join customers c on o.customer_id = c.customer_id;
+select m.item_name
+from menu m
+left join orderitems oi on m.item_id = oi.item_id
+where oi.item_id is null;
+create view top_selling_items as
+select 
+    m.item_name,
+    sum(oi.quantity) as total_sold
+from orderitems oi
+join menu m on oi.item_id = m.item_id
+group by m.item_name
+order by total_sold desc
+limit 3;
+
+select * from top_selling_items;
+select *
+from orders
+where date(order_date_time) = curdate();
+delimiter //
+
+create procedure dailysalessummary()
+begin
+    declare done int default false;
+    declare o_date date;
+    declare total decimal(10,2);
+
+    declare cur cursor for
+        select date(o.order_date_time),
+               sum(oi.quantity * oi.unit_price)
+        from orders o
+        join orderitems oi on o.order_id = oi.order_id
+        group by date(o.order_date_time);
+
+    declare continue handler for not found set done = true;
+
+    open cur;
+
+    read_loop: loop
+        fetch cur into o_date, total;
+
+        if done then
+            leave read_loop;
+        end if;
+
+        select o_date as order_date, total as total_sales;
+    end loop;
+
+    close cur;
+end //
+
+delimiter ;
+
+
+call dailysalessummary(); 
