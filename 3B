@@ -1,0 +1,103 @@
+create table menu (
+    item_id int primary key,
+    item_name varchar(50),
+    category varchar(50),
+    price decimal(10,2)
+);
+create table customers (
+    customer_id int primary key,
+    name varchar(50),
+    contact_number varchar(15)
+);
+create table orders (
+    order_id int primary key,
+    customer_id int,
+    order_date_time datetime,
+    foreign key (customer_id) references customers(customer_id)
+);
+create table orderitems (
+    order_id int,
+    item_id int,
+    quantity int,
+    unit_price decimal(10,2),
+    foreign key (order_id) references orders(order_id),
+    foreign key (item_id) references menu(item_id)
+);
+insert into menu values
+(1, 'pizza', 'pizza', 200),
+(2, 'burger', 'burgers', 120),
+(3, 'pasta', 'italian', 180),
+(4, 'salad', 'healthy', 100);
+insert into customers values
+(101, 'amit', '9876543210'),
+(102, 'sneha', '9876501234'),
+(103, 'rahul', '9876512345');
+insert into orders values
+(1, 101, '2026-04-25 12:00:00'),
+(2, 102, '2026-04-25 13:00:00'),
+(3, 101, '2026-04-24 19:30:00');
+insert into orderitems values
+(1, 1, 2, 200),  -- pizza
+(1, 2, 1, 120),  -- burger
+(2, 3, 1, 180),
+(3, 1, 1, 200);
+select 
+    item_id,
+    quantity,
+    unit_price,
+    (quantity * unit_price) as total_price
+from orderitems
+where order_id = 1;
+select distinct c.name
+from customers c
+join orders o on c.customer_id = o.customer_id;
+select count(*) as total_customers
+from customers;
+select c.name
+from customers c
+join orders o on c.customer_id = o.customer_id
+join orderitems oi on o.order_id = oi.order_id
+join menu m on oi.item_id = m.item_id
+where m.category in ('pizza', 'burgers')
+group by c.name
+having count(distinct m.category) = 2;
+select m.item_name
+from menu m
+left join orderitems oi on m.item_id = oi.item_id
+where oi.item_id is null;
+delimiter //
+
+create function checkcategory(
+    itemid int,
+    cat varchar(50)
+)
+returns varchar(20)
+deterministic
+begin
+    declare result varchar(20);
+
+    select if(category = cat, 'yes', 'no')
+    into result
+    from menu
+    where item_id = itemid;
+
+    return result;
+end //
+
+delimiter ;
+select checkcategory(1, 'pizza') as result;
+delimiter //
+
+create trigger prevent_negative_price
+before insert on menu
+for each row
+begin
+    if new.price < 0 then
+        signal sqlstate '45000'
+        set message_text = 'price cannot be negative';
+    end if;
+end //
+
+delimiter ;
+
+show triggers;
