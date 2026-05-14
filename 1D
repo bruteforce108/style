@@ -1,0 +1,117 @@
+create table classes (
+    class_id int primary key,
+    class_name varchar(50)
+);
+create table students (
+    student_id int primary key,
+    name varchar(50),
+    date_of_birth date,
+    gender varchar(10),
+    class_id int,
+    foreign key (class_id) references classes(class_id)
+);
+create table subjects (
+    subject_id int primary key,
+    subject_name varchar(50)
+);
+create table teachers (
+    teacher_id int primary key,
+    name varchar(50)
+);
+create table teacher_subject (
+    teacher_id int,
+    subject_id int,
+    primary key (teacher_id, subject_id),
+    foreign key (teacher_id) references teachers(teacher_id),
+    foreign key (subject_id) references subjects(subject_id)
+);
+create table grades (
+    grade_id int primary key,
+    student_id int,
+    subject_id int,
+    exam_name varchar(50),
+    marks int,
+    foreign key (student_id) references students(student_id),
+    foreign key (subject_id) references subjects(subject_id)
+);
+create table attendance (
+    student_id int,
+    attendance_date date,
+    status varchar(10),
+    foreign key (student_id) references students(student_id)
+);
+insert into classes values
+(1, 'a'),
+(2, 'b'),
+(3, 'c');
+insert into students values
+(101, 'amit', '2005-03-10', 'male', 1),
+(102, 'isha', '2006-07-12', 'female', 1),
+(103, 'rashmi', '2005-02-15', 'female', 2),
+(104, 'harsh', '2004-11-20', 'male', 2),
+(105, 'sneha', '2005-09-25', 'female', 3);
+insert into subjects values
+(1, 'math'),
+(2, 'science'),
+(3, 'english'),
+(4, 'computer');
+insert into teachers values
+(1, 'mr. sharma'),
+(2, 'ms. patel');
+insert into teacher_subject values
+(1, 1),
+(1, 2),
+(2, 3),
+(2, 4);
+insert into grades values
+(1, 101, 1, 'midterm', 25),
+(2, 101, 2, 'midterm', 20),
+(3, 102, 1, 'midterm', 22),
+(4, 103, 2, 'midterm', 18),
+(5, 104, 3, 'midterm', 24),
+(6, 105, 4, 'midterm', 21);
+select s.name, c.class_name
+from students s
+join classes c on s.class_id = c.class_id;
+select subject_id, max(marks) as highest_marks
+from grades
+group by subject_id;
+delimiter //
+
+create trigger prevent_negative_marks
+before insert on grades
+for each row
+begin
+    if new.marks < 0 then
+        signal sqlstate '45000'
+        set message_text = 'marks cannot be negative';
+    end if;
+end //
+
+delimiter ;
+
+show triggers;
+delimiter //
+
+create procedure getstudentcount(in cid int)
+begin
+    select count(*) as total_students
+    from students
+    where class_id = cid;
+end //
+
+delimiter ;
+
+call getstudentcount(1);
+select s.name, sum(g.marks) as total_marks
+from students s
+join grades g on s.student_id = g.student_id
+group by s.name
+having sum(g.marks) > 80;
+select name
+from students
+where name like '%sh%';
+select subject_id, avg(marks) as avg_marks
+from grades
+group by subject_id
+having avg(marks) > (select avg(marks) from grades);
