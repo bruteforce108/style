@@ -1,0 +1,121 @@
+create table goals (
+    goal_id int primary key,
+    goal_type varchar(50)
+);
+create table users (
+    user_id int primary key,
+    name varchar(50),
+    email varchar(100),
+    registration_date date,
+    goal_id int,
+    foreign key (goal_id) references goals(goal_id)
+);
+create table users_goal (
+    user_id int,
+    goal_id int,
+    goal_type varchar(50),
+    primary key (user_id, goal_id),
+    foreign key (user_id) references users(user_id),
+    foreign key (goal_id) references goals(goal_id)
+);
+create table workouts (
+    workout_id int primary key,
+    user_id int,
+    date date,
+    workout_type varchar(50),
+    start_time time,
+    end_time time,
+    duration_in_minutes int,
+    foreign key (user_id) references users(user_id)
+);
+create table workoutdetails (
+    workout_id int,
+    exercise_name varchar(50),
+    sets int,
+    repetitions int,
+    weight int,
+    foreign key (workout_id) references workouts(workout_id)
+);
+create table steps (
+    step_id int primary key,
+    user_id int,
+    tracking_date date,
+    step_count int,
+    foreign key (user_id) references users(user_id)
+);
+insert into goals values
+(1, 'weight loss'),
+(2, 'improve endurance'),
+(3, 'muscle gain');
+insert into users values
+(101, 'amit', 'amit@gmail.com', '2026-01-10', 2),
+(102, 'sneha', 'sneha@yahoo.com', '2026-02-15', 3),
+(103, 'rahul', 'rahul@gmail.com', '2026-03-01', 2);
+insert into users_goal values
+(101, 2, 'improve endurance'),
+(102, 3, 'muscle gain'),
+(103, 2, 'improve endurance');
+insert into workouts values
+(1, 101, '2026-03-10', 'running', '07:00:00', '07:30:00', 30),
+(2, 101, '2026-03-11', 'cycling', '06:00:00', '06:40:00', 40),
+(3, 101, '2026-03-12', 'running', '07:00:00', '07:20:00', 20),
+(4, 101, '2026-03-13', 'yoga', '06:30:00', '07:00:00', 30),
+
+(5, 102, '2026-03-10', 'gym', '18:00:00', '18:45:00', 45),
+
+(6, 103, '2026-03-10', 'cycling', '07:00:00', '07:25:00', 25),
+(7, 103, '2026-03-11', 'running', '07:00:00', '07:30:00', 30);
+insert into workoutdetails values
+(1, 'running', 1, 1, 0),
+(2, 'cycling', 1, 1, 0),
+(3, 'running', 1, 1, 0),
+(4, 'stretch', 2, 10, 0);
+insert into steps values
+(1, 101, '2026-03-10', 8000),
+(2, 101, '2026-03-11', 9000),
+(3, 102, '2026-03-10', 6000),
+(4, 103, '2026-03-10', 7000),
+(5, 103, '2026-03-11', 7500);
+select distinct u.name
+from users u
+join users_goal ug on u.user_id = ug.user_id
+join workouts w on u.user_id = w.user_id
+where ug.goal_type = 'improve endurance'
+and w.workout_type in ('running', 'cycling');
+select user_id, avg(step_count) as avg_steps
+from steps
+group by user_id;
+select count(*) as total_users
+from users;
+create view recent_workout as
+select 
+    u.name,
+    max(w.date) as last_workout_date
+from users u
+left join workouts w on u.user_id = w.user_id
+group by u.name;
+
+select * from recent_workout;
+delimiter //
+
+create trigger validate_time
+before insert on workouts
+for each row
+begin
+    if new.end_time <= new.start_time then
+        signal sqlstate '45000'
+        set message_text = 'end time must be after start time';
+    end if;
+end //
+
+delimiter ;
+
+show triggers;
+select u.name, count(w.workout_id) as total_workouts
+from users u
+join workouts w on u.user_id = w.user_id
+group by u.name
+having count(w.workout_id) > 3;
+select *
+from workouts
+where date = '2026-03-10';
