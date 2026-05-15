@@ -80,7 +80,6 @@ create table products_backup (
     deleted_at timestamp default current_timestamp
 );
 delimiter //
-
 create trigger backup_product_delete
 before delete on products
 for each row
@@ -90,7 +89,6 @@ begin
     values
     (old.product_id, old.name, old.description, old.price, old.category_id);
 end //
-
 delimiter ;
 create view product_stock_view as
 select 
@@ -100,11 +98,11 @@ select
 from products p
 join inventory i on p.product_id = i.product_id
 join warehouses w on i.warehouse_id = w.warehouse_id;
-
-select* from product_stock_view;
+select * from product_stock_view;
 select *
 from orders
 where order_date = '2026-04-20';
+delimiter //
 create procedure addproduct(
     in pid int,
     in pname varchar(50),
@@ -116,7 +114,6 @@ begin
     insert into products
     values (pid, pname, pdesc, pprice, cid);
 end //
-
 delimiter ;
 call addproduct(105, 'washing machine', 'automatic', 15000, 3);
 select distinct customer_id
