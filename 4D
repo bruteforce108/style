@@ -69,12 +69,10 @@ RETURNS varchar(10)
 DETERMINISTIC
 BEGIN
     DECLARE total_qty int;
-
     SELECT ifnull(sum(quantity_in_stock), 0)
     INTO total_qty
     FROM inventory
     WHERE product_id = pid;
-
     IF total_qty = 0 THEN
         RETURN 'yes';
     ELSE
@@ -110,24 +108,17 @@ BEGIN
     DECLARE done int default false;
     DECLARE pname varchar(50);
     DECLARE pprice decimal(10,2);
-
     DECLARE cur cursor for
         SELECT name, price FROM products;
-
     DECLARE continue handler for not found set done = true;
-
     OPEN cur;
-
     read_loop: LOOP
         FETCH cur INTO pname, pprice;
-
         IF done THEN
             LEAVE read_loop;
         END IF;
-
         SELECT pname AS product_name, pprice AS price;
     END LOOP;
-
     CLOSE cur;
 END //
 DELIMITER ;
